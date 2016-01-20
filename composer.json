@@ -1,0 +1,28 @@
+{
+  "name": "VIPnytt/CleanParam-URL-filter",
+  "description": "description_text",
+  "version": "0.0.1",
+  "keywords": ["Clean-Param", "CleanParam", "robots.txt", "URL", "filter"],
+  "homepage": "https://github.com/VIPnytt/CleanParam-URL-filter",
+  "type": "library",
+  "license": "MIT",
+  "minimum-stability": "stable",
+  "require": {
+    "php": ">=5.4.0"
+  },
+  "require-dev": {
+    "php": ">=5.4.0",
+    "phpunit/phpunit": ">=4.0",
+    "codeclimate/php-test-reporter": ">=0.2.0"
+  },
+  "authors": [
+    {
+      "name": "Jan-Petter Gundersen",
+      "email": "europe.jpg@gmail.com",
+      "role": "creator"
+    }
+  ],
+  "autoload": {
+    "classmap": [ "source/CleanParamFilter.php" ]
+  }
+}
