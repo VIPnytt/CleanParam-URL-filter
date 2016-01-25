@@ -15,19 +15,13 @@
 
 namespace vipnytt;
 
-use vipnytt\CleanParamFilter\extensions;
-
 class CleanParamFilter
 {
-    // CleanParam array types
-    const PARAM_URL = 'param=>url';
-    const URL_PARAM = 'url=>param';
-
     // Approved URLs
-    protected $approved = array();
+    private $approved = array();
 
     // Duplicate URLs
-    protected $duplicate = array();
+    private $duplicate = array();
 
     // Status
     private $filtered = false;
@@ -37,137 +31,22 @@ class CleanParamFilter
 
     // URL set
     private $urls = array();
+    private $urlsParsed = array();
 
     // Statistics
     private $statistics = array();
 
+    // URL parameter prefix
+    private $paramPrefix = ['?', '&'];
+
+    // URL parameter infix
+    private $delimiter = '=';
+
     /**
      * Constructor
-     *
-     * @param array|string $cleanParam
-     * @param array|string $urls
      */
-    public function __construct($cleanParam, $urls = null)
+    public function __construct()
     {
-        $this->addCleanParam($cleanParam);
-        $this->addURL($urls);
-    }
-
-    /**
-     * Add CleanParam
-     *
-     * @param array|string $cleanParam
-     */
-    public function addCleanParam($cleanParam)
-    {
-        switch (gettype($cleanParam)) {
-            case 'array':
-                $this->addCleanParamArray($cleanParam);
-                break;
-            case 'string':
-                $this->addCleanParam($this->initialize_robots_txt_parser($cleanParam));
-                break;
-        }
-    }
-
-    /**
-     * Add Clean-Param array
-     *
-     * @param array $array
-     */
-    private function addCleanParamArray($array)
-    {
-        //TODO: Add support for parsing of basic CleanParam strings, in case of one in each array item
-        foreach ($array as $key => $value) {
-            if (gettype($key) != 'string' ||
-                gettype($value) != 'array'
-            ) {
-                // TODO: trigger error, unknown format
-                return;
-            }
-            $type = $this->detectArrayType($array);
-            if (empty($value)) {
-                $value = array('/*');
-            }
-        }
-    }
-
-    /**
-     * Detect CleanParam array type
-     *
-     * @param array $array - CleanParam array
-     * @return string - array type
-     */
-    private function detectArrayType($array)
-    {
-        foreach ($array as $lvl1 => $sub) {
-            if (stripos($lvl1, '/') !== false) {
-                return self::URL_PARAM;
-            } elseif (stripos($lvl1, '&') !== false) {
-                return self::PARAM_URL;
-            }
-            foreach ($sub as $lvl2) {
-                if (stripos($lvl2, '/') !== false) {
-                    return self::URL_PARAM;
-                } elseif (stripos($lvl2, '&') !== false) {
-                    return self::PARAM_URL;
-                }
-            }
-        }
-    }
-
-    /**
-     * Reformat parameters
-     *
-     * @param string $parameters - unparsed parameters
-     * @return array - individual parameters
-     */
-    protected function parseParameters($parameters)
-    {
-        return explode('&', $parameters);
-    }
-
-    /**
-     * Get a list of robots.txt parser extensions
-     *
-     * @return array
-     */
-    public static function getParserExtensions()
-    {
-        $extensions = array();
-        $files = glob(dirname(__FILE__) . '/*.inc.php', GLOB_BRACE);
-        if ($files !== false) {
-            foreach ($files as $file) {
-                include_once($file);
-                $class = rtrim($file, ".inc.php");
-                if (method_exists($class, 'isInstalled')
-                    && is_callable(array($class, 'isInstalled'))
-                    && $class->isInstalled()
-                ) {
-                    $extensions[] = $class;
-                }
-            }
-        }
-        return $extensions;
-    }
-
-    /**
-     * Robots.txt parser
-     *
-     * @param string $content - robots.txt valid content
-     * @return array - [URL]=param or [param]=URL
-     */
-    private function initialize_robots_txt_parser($content)
-    {
-        $extensions = $this->getParserExtensions();
-        foreach ($extensions as $parser) {
-            $cleanParam = new $parser->parse($content);
-            if (is_array($cleanParam)) {
-                return $cleanParam;
-            }
-        }
-        trigger_error("Unable to parse Clean-Param string, no supported robots.txt parsers installed, please use pre-parsed array instead", E_USER_WARNING);
-        return array();
     }
 
     /**
@@ -180,23 +59,13 @@ class CleanParamFilter
     {
         switch (gettype($url)) {
             case 'array':
-                $this->parseURLArray($url);
+                foreach ($url as $value) {
+                    $this->prepareURL($value);
+                }
                 break;
             case 'string':
                 $this->prepareURL($url);
                 break;
-        }
-    }
-
-    /**
-     * Parse URL array
-     *
-     * @param array $array
-     */
-    private function parseURLArray($array)
-    {
-        foreach ($array as $url) {
-            $this->addURL($url);
         }
     }
 
@@ -209,6 +78,7 @@ class CleanParamFilter
     {
         $relative = $this->parseURL($url);
         if ($relative === false) {
+            trigger_error('Invalid URL: ' . $url, E_USER_NOTICE);
             return;
         }
         $this->urls[] = $relative;
@@ -216,13 +86,14 @@ class CleanParamFilter
     }
 
     /**
-     * Parse single URL
+     * Parse URL
      *
      * @param  string $url
      * @return string|false
      */
     private function parseURL($url)
     {
+        $url = $this->encode_url($url);
         $parsed = parse_url($url);
         if ($parsed === false ||
             !isset($parsed['path'])
@@ -230,6 +101,42 @@ class CleanParamFilter
             return false;
         }
         return $parsed['path'] . (isset($parsed['query']) ? '?' . $parsed['query'] : '');
+    }
+
+    /**
+     * URL encoder according to RFC 3986
+     * Returns a string containing the encoded URL with disallowed characters converted to their percentage encodings.
+     * @link http://publicmind.in/blog/url-encoding/
+     *
+     * @param string $url
+     * @return string string
+     */
+    private static function encode_url($url)
+    {
+        $reserved = array(
+            ":" => '!%3A!ui',
+            "/" => '!%2F!ui',
+            "?" => '!%3F!ui',
+            "#" => '!%23!ui',
+            "[" => '!%5B!ui',
+            "]" => '!%5D!ui',
+            "@" => '!%40!ui',
+            "!" => '!%21!ui',
+            "$" => '!%24!ui',
+            "&" => '!%26!ui',
+            "'" => '!%27!ui',
+            "(" => '!%28!ui',
+            ")" => '!%29!ui',
+            "*" => '!%2A!ui',
+            "+" => '!%2B!ui',
+            "," => '!%2C!ui',
+            ";" => '!%3B!ui',
+            "=" => '!%3D!ui',
+            "%" => '!%25!ui'
+        );
+        $url = preg_replace(array_values($reserved), array_keys($reserved), rawurlencode($url));
+
+        return $url;
     }
 
     /**
@@ -253,20 +160,142 @@ class CleanParamFilter
         if ($this->filtered) {
             return;
         }
-        $this->optimize();
-        //TODO: Filter
+        $this->cleanParam = array_unique($this->cleanParam);
+        $this->urls = array_unique($this->urls);
+        $this->urlsParsed = $this->urls;
+        $this->sortURLs();
+        $this->stripHashtag();
+        $this->filterCleanParam();
+
+        $this->approved = $this->urlsParsed;
         $this->filtered = true;
     }
 
-    /**
-     * Optimize URL and Clean-Param arrays
-     *
-     * @return void
-     */
-    private function optimize()
+    private function sortURLs()
     {
-        $this->cleanParam = array_unique($this->cleanParam);
-        $this->urls = array_unique($this->urls);
+        $new = array();
+        foreach ($this->urlsParsed as $url) {
+            $tmp = parse_url($url);
+            if (isset($tmp['query'])) {
+                $qPieces = explode('&', $tmp['query']);
+                sort($qPieces);
+                $tmp['query'] = implode('&', $qPieces);
+            }
+            $new[] = $this->unParse_url($tmp);
+        }
+        sort($new);
+        $this->urlsParsed = $new;
+    }
+
+    private function unParse_url($parsed_url)
+    {
+        $scheme = isset($parsed_url['scheme']) ? $parsed_url['scheme'] . '://' : '';
+        $host = isset($parsed_url['host']) ? $parsed_url['host'] : '';
+        $port = isset($parsed_url['port']) ? ':' . $parsed_url['port'] : '';
+        $user = isset($parsed_url['user']) ? $parsed_url['user'] : '';
+        $pass = isset($parsed_url['pass']) ? ':' . $parsed_url['pass'] : '';
+        $pass = ($user || $pass) ? "$pass@" : '';
+        $path = isset($parsed_url['path']) ? $parsed_url['path'] : '';
+        $query = isset($parsed_url['query']) ? '?' . $parsed_url['query'] : '';
+        $fragment = isset($parsed_url['fragment']) ? '#' . $parsed_url['fragment'] : '';
+        return $scheme . $user . $pass . $host . $port . $path . $query . $fragment;
+    }
+
+    /**
+     * Strip hashtag
+     *
+     * @return string
+     */
+    private function stripHashtag()
+    {
+        $new = array();
+        foreach ($this->urlsParsed as $url) {
+            $new[] = explode('#', $url, 1)[0];
+        }
+        $this->urlsParsed = $new;
+    }
+
+    private function filterCleanParam()
+    {
+        $new = array();
+        $reRun = true;
+        while ($reRun) {
+            $reRun = false;
+            foreach ($this->urlsParsed as $url) {
+                $paramArray = $this->getUsedCleanParam($url);
+                $combo = $this->generateCombinations($paramArray);
+                foreach ($combo as $possibillity) {
+                    $tmp = $this->stripParam($url, $possibillity);
+                    if (in_array($tmp, $this->urlsParsed)) {
+                        $reRun = true;
+                        $new[] = $tmp;
+                        break;
+                    }
+                }
+                if (!$reRun) {
+                    $new[] = $url;
+                }
+                $this->urlsParsed = array_unique($new);
+            }
+        }
+    }
+
+    private function getUsedCleanParam($url)
+    {
+        $array = array();
+        foreach ($this->cleanParam as $path => $cleanParam) {
+            if (!$this->checkBasicRule($path, parse_url($url, PHP_URL_PATH))) {
+                continue;
+            }
+            foreach ($cleanParam as $param) {
+                foreach ($this->paramPrefix as $char) {
+                    if (strpos($url, $char . $param . $this->delimiter)) {
+                        $array[] = $param;
+                    }
+                }
+            }
+        }
+        return array_unique($array);
+    }
+
+    private function checkBasicRule($rule, $path)
+    {
+        $rule = $this->encode_url($rule);
+        // change @ to \@
+        $escaped = strtr($rule, array("@" => '\@'));
+        // match result
+        if (preg_match('@' . $escaped . '@', $path)) {
+            if (strpos($escaped, '$') !== false) {
+                if (mb_strlen($escaped) - 1 == mb_strlen($path)) {
+                    return true;
+                }
+            } else {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private function stripParam($url, $paramArray)
+    {
+        foreach ($this->cleanParam as $path => $cleanParam) {
+            if (!$this->checkBasicRule($path, parse_url($url, PHP_URL_PATH))) {
+                continue;
+            }
+            foreach ($paramArray as $param) {
+                if (!in_array($param, $paramArray)) {
+                    continue;
+                }
+                foreach ($this->paramPrefix as $char) {
+                    $pos_param = stripos($url, $char . $param . $this->delimiter);
+                    $pos_delimiter = stripos($url, "&", min($pos_param + 1, strlen($url)));
+                    $len = ($pos_delimiter !== false) ? $pos_delimiter - $pos_param : null;
+                    $url = substr($url, $pos_param, $len);
+                }
+            }
+        }
+        echo $url;
+        return $url;
     }
 
     /**
@@ -307,5 +336,39 @@ class CleanParamFilter
     {
         $this->filter();
         return $this->statistics;
+    }
+
+    /**
+     * Add CleanParam
+     *
+     * @param string $param
+     * @param string $path
+     */
+    public function addCleanParam($param, $path = '/*')
+    {
+        $url_encoded = $this->encode_url($path);
+        $param_array = explode('&', $param);
+        foreach ($param_array as $parameter) {
+            $this->cleanParam[$url_encoded][] = $parameter;
+        }
+    }
+
+    /**
+     * Generate all possible alphabetical combinations of given strings
+     *
+     * @param array $strings - Strings to combine
+     * @param array $combinationArray - for internal use only
+     * @param int $start - for internal use only
+     * @param string $prefix - for internal use only
+     * @return array
+     */
+    private function generateCombinations($strings, &$combinationArray = array(), $start = 0, $prefix = "")
+    {
+        for ($i = $start; $i < count($strings); $i++) {
+            $combination = $prefix . $strings[$i];
+            $combinationArray[] = $combination;
+            $this->generateCombinations($strings, $combinationArray, ++$start, $combination);
+        }
+        return $combinationArray;
     }
 }
