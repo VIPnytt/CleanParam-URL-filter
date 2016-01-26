@@ -1,5 +1,7 @@
 <?php
 
+use vipnytt\CleanParamFilter;
+
 class CleanParamTest extends \PHPUnit_Framework_TestCase
 {
     /**
@@ -11,7 +13,7 @@ class CleanParamTest extends \PHPUnit_Framework_TestCase
     public function testCleanParam()
     {
         // init parser
-        $filter = new vipnytt\CleanParamFilter();
+        $filter = new CleanParamFilter();
         $this->assertInstanceOf('CleanParamFilter', $filter);
 
         $filter->addCleanParam('ref');
