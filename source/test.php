@@ -7,14 +7,15 @@ require_once('CleanParamFilter.php');
 
 $filter = new \vipnytt\CleanParamFilter();
 
-$filter->addCleanParam('ref');
+$filter->addCleanParam('ref&site');
 
+$filter->addURL('http://example.com/');
 $filter->addURL('http://example.com/?ref=somewhere1');
 $filter->addURL('http://example.com/?ref=somewhere2&test=2');
-$filter->addURL('http://example.com/?ref=somewhere3&test=3');
-$filter->addURL('http://example.com/?ref=somewhere1&test1=3');
-$filter->addURL('http://example.com/?ref=somewhere2&test1=3');
 $filter->addURL('http://example.com/?ref=somewhere3&test1=3');
+$filter->addURL('http://example.com/?ref=somewhere4&test1=3');
+$filter->addURL('http://example.com/?ref=somewhere5&test1=3');
+$filter->addURL('http://example.com/?ref=somewhere6');
 
 
 
