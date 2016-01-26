@@ -98,8 +98,7 @@ class CleanParamFilter
         ) {
             return false;
         }
-        //return $this->unParse_url($parsed);
-        return $parsed['path'] . (isset($parsed['query']) ? '?' . $parsed['query'] : '');
+        return $this->unParse_url($parsed);
     }
 
     /**
@@ -160,10 +159,12 @@ class CleanParamFilter
         }
         $this->cleanParam = array_unique($this->cleanParam);
         $this->urls = array_unique($this->urls);
+        sort($this->urls);
         $this->urlsParsed = $this->urls;
         $this->stripFragment();
         $this->filterDuplicateParam();
         $this->approved = $this->urlsParsed;
+        sort($this->approved);
         $this->filtered = true;
     }
 
@@ -242,7 +243,6 @@ class CleanParamFilter
      */
     private function checkPath($path, $prefix)
     {
-        //TODO: Will be broken when switching to full URLs
         $path = $this->encode_url($path);
         // change @ to \@
         $escaped = strtr($path, array("@" => '\@'));
@@ -343,6 +343,7 @@ class CleanParamFilter
         $this->filter();
         if ($this->parseURL($url) === false) return false;
         $url = $this->paramSort($url);
+
         return !in_array($url, $this->urlsParsed);
     }
 
