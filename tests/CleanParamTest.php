@@ -7,14 +7,15 @@ class CleanParamTest extends \PHPUnit_Framework_TestCase
     /**
      * Basic usage test
      *
+     * @covers CleanParamFilter::addCleanParam
      * @covers CleanParamFilter::addURL
-     * @covers CleanParamFilter::addURL
+     * @covers CleanParamFilter::isDuplicate
      */
     public function testCleanParam()
     {
         // init parser
         $filter = new CleanParamFilter();
-        $this->assertInstanceOf('CleanParamFilter', $filter);
+        $this->assertInstanceOf('vipnytt\CleanParamFilter', $filter);
 
         $filter->addCleanParam('ref');
 
