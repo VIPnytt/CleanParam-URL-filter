@@ -98,8 +98,7 @@ class CleanParamFilter
         ) {
             return false;
         }
-        //return $this->unParse_url($parsed);
-        return $parsed['path'] . (isset($parsed['query']) ? '?' . $parsed['query'] : '');
+        return $this->unParse_url($parsed);
     }
 
     /**
@@ -138,6 +137,27 @@ class CleanParamFilter
     }
 
     /**
+     * Build URL from array
+     * Does the opposite of the parse_url($string) function
+     *
+     * @param array $parsed_url
+     * @return string
+     */
+    private function unParse_url($parsed_url)
+    {
+        $scheme = isset($parsed_url['scheme']) ? $parsed_url['scheme'] . '://' : '';
+        $host = isset($parsed_url['host']) ? $parsed_url['host'] : '';
+        $port = isset($parsed_url['port']) ? ':' . $parsed_url['port'] : '';
+        $user = isset($parsed_url['user']) ? $parsed_url['user'] : '';
+        $pass = isset($parsed_url['pass']) ? ':' . $parsed_url['pass'] : '';
+        $pass = ($user || $pass) ? "$pass@" : '';
+        $path = isset($parsed_url['path']) ? $parsed_url['path'] : '';
+        $query = isset($parsed_url['query']) ? '?' . $parsed_url['query'] : '';
+        $fragment = isset($parsed_url['fragment']) ? '#' . $parsed_url['fragment'] : '';
+        return $scheme . $user . $pass . $host . $port . $path . $query . $fragment;
+    }
+
+    /**
      * Lists all approved URLs
      *
      * @return array
@@ -159,11 +179,12 @@ class CleanParamFilter
             return;
         }
         $this->cleanParam = array_unique($this->cleanParam);
-        $this->urls = array_unique($this->urls);
+        sort($this->urls);
         $this->urlsParsed = $this->urls;
         $this->stripFragment();
         $this->filterDuplicateParam();
         $this->approved = $this->urlsParsed;
+        sort($this->approved);
         $this->filtered = true;
     }
 
@@ -242,7 +263,6 @@ class CleanParamFilter
      */
     private function checkPath($path, $prefix)
     {
-        //TODO: Will be broken when switching to full URLs
         $path = $this->encode_url($path);
         // change @ to \@
         $escaped = strtr($path, array("@" => '\@'));
@@ -268,27 +288,6 @@ class CleanParamFilter
             $parsed['query'] = implode('&', $qPieces);
         }
         return $this->unParse_url($parsed);
-    }
-
-    /**
-     * Build URL from array
-     * Does the opposite of the parse_url($string) function
-     *
-     * @param array $parsed_url
-     * @return string
-     */
-    private function unParse_url($parsed_url)
-    {
-        $scheme = isset($parsed_url['scheme']) ? $parsed_url['scheme'] . '://' : '';
-        $host = isset($parsed_url['host']) ? $parsed_url['host'] : '';
-        $port = isset($parsed_url['port']) ? ':' . $parsed_url['port'] : '';
-        $user = isset($parsed_url['user']) ? $parsed_url['user'] : '';
-        $pass = isset($parsed_url['pass']) ? ':' . $parsed_url['pass'] : '';
-        $pass = ($user || $pass) ? "$pass@" : '';
-        $path = isset($parsed_url['path']) ? $parsed_url['path'] : '';
-        $query = isset($parsed_url['query']) ? '?' . $parsed_url['query'] : '';
-        $fragment = isset($parsed_url['fragment']) ? '#' . $parsed_url['fragment'] : '';
-        return $scheme . $user . $pass . $host . $port . $path . $query . $fragment;
     }
 
     /**
@@ -343,6 +342,7 @@ class CleanParamFilter
         $this->filter();
         if ($this->parseURL($url) === false) return false;
         $url = $this->paramSort($url);
+
         return !in_array($url, $this->urlsParsed);
     }
 
@@ -384,7 +384,7 @@ class CleanParamFilter
     private function checkRuleLength($param, $path = '/')
     {
         if (strlen(self::DIRECTIVE . ": $param $path") > self::MAX_LENGTH) {
-            trigger_error('Clean-Param rule too long, hereby ignored.', E_USER_WARNING);
+            trigger_error(self::DIRECTIVE . ' rule too long, hereby ignored.', E_USER_WARNING);
             return false;
         }
         return true;

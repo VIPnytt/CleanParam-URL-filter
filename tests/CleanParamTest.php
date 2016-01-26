@@ -28,6 +28,8 @@ class CleanParamTest extends \PHPUnit_Framework_TestCase
         $filter->addURL('http://example.com/?ref=somewhere6');
 
         $this->assertFalse($filter->isDuplicate('http://example.com/'));
+        $this->assertTrue($filter->isDuplicate('http://example.com/?ref=somewhere1'));
+        $this->assertFalse($filter->isDuplicate('http://example.com/?ref=somewhere3&test1=3'));
         $this->assertTrue($filter->isDuplicate('http://example.com/?ref=somewhere5&test1=3'));
     }
 }
