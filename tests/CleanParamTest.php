@@ -8,10 +8,9 @@ class CleanParamTest extends \PHPUnit_Framework_TestCase
      * Basic usage test
      *
      * @dataProvider generateDataForTest
-     * @covers CleanParamFilter::addCleanParam
-     * @covers CleanParamFilter::addURLs
-     * @covers CleanParamFilter::listApproved
-     * @covers CleanParamFilter::listDuplicate
+     * @covers       CleanParamFilter::addCleanParam
+     * @covers       CleanParamFilter::listApproved
+     * @covers       CleanParamFilter::listDuplicate
      * @param array $urls
      */
     public function testCleanParam($urls)
@@ -42,13 +41,15 @@ class CleanParamTest extends \PHPUnit_Framework_TestCase
     {
         return array(
             array(
-                'http://example.com/',
-                'http://example.com/?ref=somewhere1',
-                'http://example.com/?ref=somewhere2&test=2',
-                'http://example.com/?ref=somewhere3&test1=3',
-                'http://example.com/?ref=somewhere4&test1=3',
-                'http://example.com/?ref=somewhere5&test1=3',
-                'http://example.com/?ref=somewhere6'
+                array(
+                    'http://example.com/',
+                    'http://example.com/?ref=somewhere1',
+                    'http://example.com/?ref=somewhere2&test=2',
+                    'http://example.com/?ref=somewhere3&test1=3',
+                    'http://example.com/?ref=somewhere4&test1=3',
+                    'http://example.com/?ref=somewhere5&test1=3',
+                    'http://example.com/?ref=somewhere6'
+                )
             )
         );
     }
