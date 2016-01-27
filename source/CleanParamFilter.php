@@ -17,12 +17,6 @@ namespace vipnytt;
 
 class CleanParamFilter
 {
-    // Directive name
-    const DIRECTIVE = 'clean-param';
-
-    // Max rule length
-    const MAX_LENGTH = 500;
-
     // Clean-Param set
     private $cleanParam = [];
 
@@ -30,75 +24,39 @@ class CleanParamFilter
     private $urls = [];
     private $urls_wip = [];
 
+    // Host set
+    private $hosts = [];
+
+    // Status
+    private $parsed = false;
+
     // Approved and duplicate URLs
     private $approved = [];
     private $duplicate = [];
 
     /**
      * Constructor
-     */
-    public function __construct()
-    {
-        /**
-         * Coming soon...
-         *
-         * + Add an array of CleanParams
-         * + Add an array of URLs
-         */
-    }
-
-    /**
-     * Add URL(s)
      *
-     * @param array|string $url
-     * @return void
+     * @param array $urls
      */
-    public function addURL($url)
+    public function __construct($urls)
     {
-        switch (gettype($url)) {
-            case 'array':
-                foreach ($url as $value) {
-                    $this->prepareURL($value);
-                }
-                break;
-            case 'string':
-                $this->prepareURL($url);
-                break;
+        // Parse URL(s)
+        foreach ($urls as $url) {
+            $url = $this->urlEncode($url);
+            $parsed = parse_url($url);
+            if ($parsed === false ||
+                !isset($parsed['path'])
+            ) {
+                trigger_error('Invalid URL: ' . $url, E_USER_NOTICE);
+                continue;
+            }
+            $host = isset($parsed['host']) ? $parsed['host'] : '';
+            if (!isset(array_flip($this->hosts)[$host])) {
+                $this->hosts[] = $host;
+            }
+            $this->urls[] = $this->unParseURL($parsed);
         }
-    }
-
-    /**
-     * Prepare and add URL
-     *
-     * @param string $url
-     * @return void
-     */
-    private function prepareURL($url)
-    {
-        $relative = $this->parseURL($url);
-        if ($relative === false) {
-            trigger_error('Invalid URL: ' . $url, E_USER_NOTICE);
-            return;
-        }
-        $this->urls[] = $relative;
-    }
-
-    /**
-     * Parse URL
-     *
-     * @param  string $url
-     * @return string|false
-     */
-    private function parseURL($url)
-    {
-        $url = $this->encode_url($url);
-        $parsed = parse_url($url);
-        if ($parsed === false ||
-            !isset($parsed['path'])
-        ) {
-            return false;
-        }
-        return $this->unParse_url($parsed);
     }
 
     /**
@@ -109,7 +67,7 @@ class CleanParamFilter
      * @param string $url
      * @return string
      */
-    private static function encode_url($url)
+    private static function urlEncode($url)
     {
         $reserved = array(
             ":" => '!%3A!ui',
@@ -132,29 +90,28 @@ class CleanParamFilter
             "=" => '!%3D!ui',
             "%" => '!%25!ui'
         );
-        $url = preg_replace(array_values($reserved), array_keys($reserved), rawurlencode($url));
-        return $url;
+        return preg_replace(array_values($reserved), array_keys($reserved), rawurlencode($url));
     }
 
     /**
      * Build URL from array
      * Does the opposite of the parse_url($string) function
      *
-     * @param array $parsed_url
+     * @param array $parsedURL
      * @return string
      */
-    private function unParse_url($parsed_url)
+    private function unParseURL($parsedURL)
     {
-        $scheme = isset($parsed_url['scheme']) ? $parsed_url['scheme'] . '://' : '';
-        $host = isset($parsed_url['host']) ? $parsed_url['host'] : '';
-        $port = isset($parsed_url['port']) ? ':' . $parsed_url['port'] : '';
-        $user = isset($parsed_url['user']) ? $parsed_url['user'] : '';
-        $pass = isset($parsed_url['pass']) ? ':' . $parsed_url['pass'] : '';
+        $scheme = isset($parsedURL['scheme']) ? $parsedURL['scheme'] . '://' : '';
+        $host = isset($parsedURL['host']) ? $parsedURL['host'] : '';
+        $port = isset($parsedURL['port']) ? ':' . $parsedURL['port'] : '';
+        $user = isset($parsedURL['user']) ? $parsedURL['user'] : '';
+        $pass = isset($parsedURL['pass']) ? ':' . $parsedURL['pass'] : '';
         $pass = ($user || $pass) ? "$pass@" : '';
-        $path = isset($parsed_url['path']) ? $parsed_url['path'] : '';
-        $query = isset($parsed_url['query']) ? '?' . $parsed_url['query'] : '';
-        $fragment = isset($parsed_url['fragment']) ? '#' . $parsed_url['fragment'] : '';
-        return $scheme . $user . $pass . $host . $port . $path . $query . $fragment;
+        $path = isset($parsedURL['path']) ? $parsedURL['path'] : '';
+        $query = isset($parsedURL['query']) ? '?' . $parsedURL['query'] : '';
+        $fragment = isset($parsedURL['fragment']) ? '#' . $parsedURL['fragment'] : '';
+        return "$scheme$user$pass$host$port$path$query$fragment";
     }
 
     /**
@@ -175,7 +132,7 @@ class CleanParamFilter
      */
     private function filter()
     {
-        if (count($this->urls) === count($this->urls_wip)) {
+        if ($this->parsed) {
             return;
         }
         $this->convert();
@@ -192,43 +149,12 @@ class CleanParamFilter
     private function convert()
     {
         foreach ($this->urls as $url) {
-            $tmp = $url;
-            $tmp = $this->stripFragmentSingle($tmp);
-            $tmp = $this->fixBrokenQuery($tmp);
+            // strip fragment
+            $tmp = explode('#', $url, 1)[0];
+            // sort the query string
             $tmp = $this->paramSort($tmp);
             $this->urls_wip[$url] = $tmp;
         }
-    }
-
-    /**
-     * Strip URL fragment
-     *
-     * @param string $url
-     * @return string
-     */
-    private static function stripFragmentSingle($url)
-    {
-        return explode('#', $url, 1)[0];
-    }
-
-    /**
-     * Fix broken URL query string
-     *
-     * @param $url
-     * @return string
-     */
-    private static function fixBrokenQuery($url)
-    {
-        if (strpos($url, '?') === false && strpos($url, '&') !== false) {
-            $url = substr_replace($url, '?', strpos($url, '&'), 1);
-        }
-        $strip = ['&', '?'];
-        foreach ($strip as $char) {
-            if (substr($url, -1) == $char) {
-                $url = substr_replace($url, '', -1);
-            }
-        }
-        return $url;
     }
 
     /**
@@ -245,7 +171,7 @@ class CleanParamFilter
             sort($qPieces);
             $parsed['query'] = implode('&', $qPieces);
         }
-        return $this->unParse_url($parsed);
+        return $this->unParseURL($parsed);
     }
 
     /**
@@ -255,21 +181,21 @@ class CleanParamFilter
      */
     private function filterDuplicateParam()
     {
-        $urls_new = [];
+        $new = [];
         for ($count = 0; $count <= 1; $count++) {
-            foreach ($this->urls_wip as $url => $url_sorted) {
-                $params = $this->findCleanParam($url_sorted);
-                $selected = $this->stripParam($url_sorted, $params);
-                foreach ($urls_new as $random) {
+            foreach ($this->urls_wip as $url => $sorted) {
+                $params = $this->findCleanParam($sorted);
+                $selected = $this->stripParam($sorted, $params);
+                foreach ($new as $random) {
                     $random = $this->stripParam($random, $params);
                     if ($selected === $random) {
                         continue 2;
                     }
                 }
-                $urls_new[$url] = $url_sorted;
+                $new[$url] = $sorted;
                 $count = 0;
             }
-            $this->urls_wip = $urls_new;
+            $this->urls_wip = $new;
         }
         $this->approved = array_keys($this->urls_wip);
         $this->duplicate = array_diff($this->urls, $this->approved);
@@ -285,7 +211,11 @@ class CleanParamFilter
     {
         $paramPrefix = ['?', '&'];
         $paramsFound = [];
-        foreach ($this->cleanParam as $path => $cleanParam) {
+        $host = parse_url($url, PHP_URL_HOST);
+        if (!isset($this->cleanParam[$host])) {
+            return $paramsFound;
+        }
+        foreach ($this->cleanParam[$host] as $path => $cleanParam) {
             if (!$this->checkPath($path, parse_url($url, PHP_URL_PATH))) {
                 continue;
             }
@@ -309,7 +239,7 @@ class CleanParamFilter
      */
     private function checkPath($path, $prefix)
     {
-        $path = $this->encode_url($path);
+        $path = $this->urlEncode($path);
         // change @ to \@
         $escaped = strtr($path, ["@" => '\@']);
         // match result
@@ -322,8 +252,8 @@ class CleanParamFilter
     /**
      * Strip provided parameters from URL
      *
-     * @param $url - URL to check
-     * @param $paramArray - parameters to remove
+     * @param string $url - URL to check
+     * @param array $paramArray - parameters to remove
      * @return string
      */
     private function stripParam($url, $paramArray)
@@ -331,16 +261,39 @@ class CleanParamFilter
         $prefixArray = ['?', '&'];
         foreach ($paramArray as $param) {
             foreach ($prefixArray as $prefix) {
-                $pos_param = stripos($url, $prefix . $param . '=');
-                $pos_delimiter = stripos($url, '&', min($pos_param + 1, strlen($url)));
-                if ($pos_param === false) {
+                $posParam = stripos($url, $prefix . $param . '=');
+                $posDelimiter = stripos($url, '&', min($posParam + 1, strlen($url)));
+                if ($posParam === false) {
                     continue;
                 }
-                $len = ($pos_delimiter !== false && $pos_param < $pos_delimiter) ? $pos_delimiter - $pos_param : strlen($url);
-                $url = substr_replace($url, '', $pos_param, $len);
+                $len = ($posDelimiter !== false && $posParam < $posDelimiter) ? $posDelimiter - $posParam : strlen($url);
+                $url = substr_replace($url, '', $posParam, $len);
             }
         }
-        return $this->fixBrokenQuery($url);
+        $url = $this->fixQueryString($url);
+        return $url;
+    }
+
+    /**
+     * Fix damaged URL query string
+     *
+     * @param string $url
+     * @return string
+     */
+    private static function fixQueryString($url)
+    {
+        // if ? is missing, but & exists, switch
+        if (strpos($url, '?') === false && strpos($url, '&') !== false) {
+            $url = substr_replace($url, '?', strpos($url, '&'), 1);
+        }
+        // Strip last character too
+        $strip = ['&', '?'];
+        foreach ($strip as $char) {
+            if (substr($url, -1) == $char) {
+                $url = substr_replace($url, '', -1);
+            }
+        }
+        return $url;
     }
 
     /**
@@ -357,33 +310,24 @@ class CleanParamFilter
     /**
      * Add CleanParam
      *
-     * @param string $param
-     * @param string $path
+     * @param string $param - parameter(s)
+     * @param string $path - path the param is valid for
+     * @param string $host - limit to a single hostname
      * @return void
      */
-    public function addCleanParam($param, $path = '/')
+    public function addCleanParam($param, $path = '/', $host = null)
     {
-        $url_encoded = $this->encode_url($path);
-        if ($this->checkRuleLength($param, $url_encoded) === false) return;
-        $param_array = explode('&', $param);
-        foreach ($param_array as $parameter) {
-            $this->cleanParam[$url_encoded][$parameter] = $parameter;
+        if (!isset($host) && count($this->hosts) > 1) {
+            trigger_error('URLs from multiple hosts used. Missing $host parameter', E_USER_ERROR);
+            return;
+        } elseif (!isset($host)) {
+            $host = $this->hosts[0];
         }
-    }
-
-    /**
-     * Rule length check
-     *
-     * @param $param
-     * @param $path
-     * @return bool
-     */
-    private function checkRuleLength($param, $path = '/')
-    {
-        if (strlen(self::DIRECTIVE . ": $param $path") > self::MAX_LENGTH) {
-            trigger_error(self::DIRECTIVE . ' rule too long, hereby ignored.', E_USER_WARNING);
-            return false;
+        $encodedURL = $this->urlEncode($path);
+        $paramArray = explode('&', $param);
+        foreach ($paramArray as $parameter) {
+            $this->cleanParam[$host][$encodedURL][$parameter] = $parameter;
         }
-        return true;
+        $this->parsed = false;
     }
 }

@@ -8,25 +8,18 @@ class CleanParamTest extends \PHPUnit_Framework_TestCase
      * Basic usage test
      *
      * @covers CleanParamFilter::addCleanParam
-     * @covers CleanParamFilter::addURL
+     * @covers CleanParamFilter::addURLs
      * @covers CleanParamFilter::listApproved
      * @covers CleanParamFilter::listDuplicate
+     * @param array $urls
      */
-    public function testCleanParam()
+    public function testCleanParam($urls)
     {
         // init parser
-        $filter = new CleanParamFilter();
+        $filter = new CleanParamFilter($urls);
         $this->assertInstanceOf('vipnytt\CleanParamFilter', $filter);
 
         $filter->addCleanParam('ref');
-
-        $filter->addURL('http://example.com/');
-        $filter->addURL('http://example.com/?ref=somewhere1');
-        $filter->addURL('http://example.com/?ref=somewhere2&test=2');
-        $filter->addURL('http://example.com/?ref=somewhere3&test1=3');
-        $filter->addURL('http://example.com/?ref=somewhere4&test1=3');
-        $filter->addURL('http://example.com/?ref=somewhere5&test1=3');
-        $filter->addURL('http://example.com/?ref=somewhere6');
 
         // Contains
         $this->assertContains('http://example.com/', $filter->listApproved());
@@ -38,5 +31,24 @@ class CleanParamTest extends \PHPUnit_Framework_TestCase
         $this->assertNotContains('http://example.com/?ref=somewhere1', $filter->listApproved());
         $this->assertNotContains('http://example.com/?ref=somewhere3&test1=3', $filter->listDuplicate());
         $this->assertNotContains('http://example.com/?ref=somewhere5&test1=3', $filter->listApproved());
+    }
+
+    /**
+     * Generate test case data
+     * @return array
+     */
+    public function generateDataForTest()
+    {
+        return array(
+            array(
+                'http://example.com/',
+                'http://example.com/?ref=somewhere1',
+                'http://example.com/?ref=somewhere2&test=2',
+                'http://example.com/?ref=somewhere3&test1=3',
+                'http://example.com/?ref=somewhere4&test1=3',
+                'http://example.com/?ref=somewhere5&test1=3',
+                'http://example.com/?ref=somewhere6'
+            )
+        );
     }
 }
