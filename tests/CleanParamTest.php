@@ -7,6 +7,7 @@ class CleanParamTest extends \PHPUnit_Framework_TestCase
     /**
      * Basic usage test
      *
+     * @dataProvider generateDataForTest
      * @covers CleanParamFilter::addCleanParam
      * @covers CleanParamFilter::addURLs
      * @covers CleanParamFilter::listApproved
