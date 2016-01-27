@@ -178,7 +178,6 @@ class CleanParamFilter
         if ($this->filtered) {
             return;
         }
-        $this->cleanParam = array_unique($this->cleanParam);
         sort($this->urls);
         $this->urlsParsed = $this->urls;
         $this->stripFragment();
@@ -209,23 +208,23 @@ class CleanParamFilter
      */
     private function filterDuplicateParam()
     {
-        $urlsParsed_replacement = array();
+        $urlsParsed_new = array();
         for ($i = 0; $i <= 1; $i++) {
             foreach ($this->urlsParsed as $url) {
                 $paramArray = $this->getCleanParamInURL($url);
                 $current = $this->paramSort($url);
                 $current = $this->stripParam($current, $paramArray);
-                foreach ($urlsParsed_replacement as $existing) {
+                foreach ($urlsParsed_new as $existing) {
                     $existing = $this->paramSort($existing);
                     $existing = $this->stripParam($existing, $paramArray);
                     if ($current === $existing) {
                         continue 2;
                     }
                 }
-                $urlsParsed_replacement[] = $url;
+                $urlsParsed_new[] = $url;
                 $i = 0;
             }
-            $this->urlsParsed = array_unique($urlsParsed_replacement);
+            $this->urlsParsed = $urlsParsed_new;
         }
     }
 
@@ -238,7 +237,7 @@ class CleanParamFilter
     private function getCleanParamInURL($url)
     {
         $paramPrefix = ['?', '&'];
-        $array = array();
+        $paramsFound = array();
         foreach ($this->cleanParam as $path => $cleanParam) {
             if (!$this->checkPath($path, parse_url($url, PHP_URL_PATH))) {
                 continue;
@@ -246,12 +245,12 @@ class CleanParamFilter
             foreach ($cleanParam as $param) {
                 foreach ($paramPrefix as $char) {
                     if (strpos($url, $char . $param . '=') !== false) {
-                        $array[] = $param;
+                        $paramsFound[] = $param;
                     }
                 }
             }
         }
-        return array_unique($array);
+        return $paramsFound;
     }
 
     /**
@@ -370,7 +369,7 @@ class CleanParamFilter
         if ($this->checkRuleLength($param, $url_encoded) === false) return;
         $param_array = explode('&', $param);
         foreach ($param_array as $parameter) {
-            $this->cleanParam[$url_encoded][] = $parameter;
+            $this->cleanParam[$url_encoded][$parameter] = $parameter;
         }
     }
 
