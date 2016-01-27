@@ -23,27 +23,28 @@ class CleanParamFilter
     // Max rule length
     const MAX_LENGTH = 500;
 
-    // Approved URLs
-    private $approved = array();
-
-    // Status
-    private $filtered = false;
-
     // Clean-Param set
-    private $cleanParam = array();
+    private $cleanParam = [];
 
     // URL set
-    private $urls = array();
-    private $urlsParsed = array();
+    private $urls = [];
+    private $urls_wip = [];
 
-    // Statistics
-    private $statistics = array();
+    // Approved and duplicate URLs
+    private $approved = [];
+    private $duplicate = [];
 
     /**
      * Constructor
      */
     public function __construct()
     {
+        /**
+         * Coming soon...
+         *
+         * + Add an array of CleanParams
+         * + Add an array of URLs
+         */
     }
 
     /**
@@ -80,7 +81,6 @@ class CleanParamFilter
             return;
         }
         $this->urls[] = $relative;
-        $this->filtered = false;
     }
 
     /**
@@ -175,30 +175,77 @@ class CleanParamFilter
      */
     private function filter()
     {
-        if ($this->filtered) {
+        if (count($this->urls) === count($this->urls_wip)) {
             return;
         }
-        sort($this->urls);
-        $this->urlsParsed = $this->urls;
-        $this->stripFragment();
+        $this->convert();
         $this->filterDuplicateParam();
-        $this->approved = $this->urlsParsed;
         sort($this->approved);
-        $this->filtered = true;
+        sort($this->duplicate);
     }
 
     /**
-     * Strip URL fragment hashtag
+     * Convert URLs to a parser readable format
      *
+     * @return void
+     */
+    private function convert()
+    {
+        foreach ($this->urls as $url) {
+            $tmp = $url;
+            $tmp = $this->stripFragmentSingle($tmp);
+            $tmp = $this->fixBrokenQuery($tmp);
+            $tmp = $this->paramSort($tmp);
+            $this->urls_wip[$url] = $tmp;
+        }
+    }
+
+    /**
+     * Strip URL fragment
+     *
+     * @param string $url
      * @return string
      */
-    private function stripFragment()
+    private static function stripFragmentSingle($url)
     {
-        $new = array();
-        foreach ($this->urlsParsed as $url) {
-            $new[] = explode('#', $url, 1)[0];
+        return explode('#', $url, 1)[0];
+    }
+
+    /**
+     * Fix broken URL query string
+     *
+     * @param $url
+     * @return string
+     */
+    private static function fixBrokenQuery($url)
+    {
+        if (strpos($url, '?') === false && strpos($url, '&') !== false) {
+            $url = substr_replace($url, '?', strpos($url, '&'), 1);
         }
-        $this->urlsParsed = $new;
+        $strip = ['&', '?'];
+        foreach ($strip as $char) {
+            if (substr($url, -1) == $char) {
+                $url = substr_replace($url, '', -1);
+            }
+        }
+        return $url;
+    }
+
+    /**
+     * Sort the URL parameters alphabetically
+     *
+     * @param string $url
+     * @return string
+     */
+    private function paramSort($url)
+    {
+        $parsed = parse_url($url);
+        if (isset($parsed['query'])) {
+            $qPieces = explode('&', $parsed['query']);
+            sort($qPieces);
+            $parsed['query'] = implode('&', $qPieces);
+        }
+        return $this->unParse_url($parsed);
     }
 
     /**
@@ -208,36 +255,36 @@ class CleanParamFilter
      */
     private function filterDuplicateParam()
     {
-        $urlsParsed_new = array();
-        for ($i = 0; $i <= 1; $i++) {
-            foreach ($this->urlsParsed as $url) {
-                $paramArray = $this->getCleanParamInURL($url);
-                $current = $this->paramSort($url);
-                $current = $this->stripParam($current, $paramArray);
-                foreach ($urlsParsed_new as $existing) {
-                    $existing = $this->paramSort($existing);
-                    $existing = $this->stripParam($existing, $paramArray);
-                    if ($current === $existing) {
+        $urls_new = [];
+        for ($count = 0; $count <= 1; $count++) {
+            foreach ($this->urls_wip as $url => $url_sorted) {
+                $params = $this->findCleanParam($url_sorted);
+                $selected = $this->stripParam($url_sorted, $params);
+                foreach ($urls_new as $random) {
+                    $random = $this->stripParam($random, $params);
+                    if ($selected === $random) {
                         continue 2;
                     }
                 }
-                $urlsParsed_new[] = $url;
-                $i = 0;
+                $urls_new[$url] = $url_sorted;
+                $count = 0;
             }
-            $this->urlsParsed = $urlsParsed_new;
+            $this->urls_wip = $urls_new;
         }
+        $this->approved = array_keys($this->urls_wip);
+        $this->duplicate = array_diff($this->urls, $this->approved);
     }
 
     /**
-     * Get CleanParam parameters found in provided URL
+     * Find CleanParam parameters in provided URL
      *
      * @param string $url
      * @return array
      */
-    private function getCleanParamInURL($url)
+    private function findCleanParam($url)
     {
         $paramPrefix = ['?', '&'];
-        $paramsFound = array();
+        $paramsFound = [];
         foreach ($this->cleanParam as $path => $cleanParam) {
             if (!$this->checkPath($path, parse_url($url, PHP_URL_PATH))) {
                 continue;
@@ -264,29 +311,12 @@ class CleanParamFilter
     {
         $path = $this->encode_url($path);
         // change @ to \@
-        $escaped = strtr($path, array("@" => '\@'));
+        $escaped = strtr($path, ["@" => '\@']);
         // match result
         if (preg_match('@' . $escaped . '@', $prefix)) {
             return true;
         }
         return false;
-    }
-
-    /**
-     * Sort the URL parameters alphabetically
-     *
-     * @param string $url
-     * @return string
-     */
-    private function paramSort($url)
-    {
-        $parsed = parse_url($url);
-        if (isset($parsed['query'])) {
-            $qPieces = explode('&', $parsed['query']);
-            sort($qPieces);
-            $parsed['query'] = implode('&', $qPieces);
-        }
-        return $this->unParse_url($parsed);
     }
 
     /**
@@ -314,46 +344,14 @@ class CleanParamFilter
     }
 
     /**
-     * Fix broken URL query string
-     *
-     * @param $url
-     * @return string
-     */
-    private static function fixBrokenQuery($url)
-    {
-        if (strpos($url, '?') === false && strpos($url, '&') !== false) {
-            $url = substr_replace($url, '?', strpos($url, '&'), 1);
-        }
-        if (substr($url, -1) == '?') {
-            $url = substr_replace($url, '', -1);
-        }
-        return $url;
-    }
-
-    /**
-     * Check if URL is duplicate
-     *
-     * @param string $url
-     * @return bool
-     */
-    public function isDuplicate($url)
-    {
-        $this->filter();
-        if ($this->parseURL($url) === false) return false;
-        $url = $this->paramSort($url);
-
-        return !in_array($url, $this->urlsParsed);
-    }
-
-    /**
-     * Statistics
+     * Lists all duplicate URLs
      *
      * @return array
      */
-    public function getStatistics()
+    public function listDuplicate()
     {
         $this->filter();
-        return $this->statistics;
+        return $this->duplicate;
     }
 
     /**

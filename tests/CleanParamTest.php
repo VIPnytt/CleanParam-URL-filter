@@ -9,7 +9,8 @@ class CleanParamTest extends \PHPUnit_Framework_TestCase
      *
      * @covers CleanParamFilter::addCleanParam
      * @covers CleanParamFilter::addURL
-     * @covers CleanParamFilter::isDuplicate
+     * @covers CleanParamFilter::listApproved
+     * @covers CleanParamFilter::listDuplicate
      */
     public function testCleanParam()
     {
@@ -27,9 +28,15 @@ class CleanParamTest extends \PHPUnit_Framework_TestCase
         $filter->addURL('http://example.com/?ref=somewhere5&test1=3');
         $filter->addURL('http://example.com/?ref=somewhere6');
 
-        $this->assertFalse($filter->isDuplicate('http://example.com/'));
-        $this->assertTrue($filter->isDuplicate('http://example.com/?ref=somewhere1'));
-        $this->assertFalse($filter->isDuplicate('http://example.com/?ref=somewhere3&test1=3'));
-        $this->assertTrue($filter->isDuplicate('http://example.com/?ref=somewhere5&test1=3'));
+        // Contains
+        $this->assertContains('http://example.com/', $filter->listApproved());
+        $this->assertContains('http://example.com/?ref=somewhere1', $filter->listDuplicate());
+        $this->assertContains('http://example.com/?ref=somewhere3&test1=3', $filter->listApproved());
+        $this->assertContains('http://example.com/?ref=somewhere5&test1=3', $filter->listDuplicate());
+        // Same tests as over, but as opposite of the first
+        $this->assertNotContains('http://example.com/', $filter->listDuplicate());
+        $this->assertNotContains('http://example.com/?ref=somewhere1', $filter->listApproved());
+        $this->assertNotContains('http://example.com/?ref=somewhere3&test1=3', $filter->listDuplicate());
+        $this->assertNotContains('http://example.com/?ref=somewhere5&test1=3', $filter->listApproved());
     }
 }

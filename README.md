@@ -2,3 +2,8 @@
 
 # Clean-Param URL filtering class
 PHP class to filter duplicate URLs according to [Yandex Clean-Param specifications](https://yandex.com/support/webmaster/controlling-robot/robots-txt.xml#clean-param).
+
+## Schedule
+The class is currently under active development, so expect things to break.
+
+An Beta version is scheduled for release by the end of February 2016.
