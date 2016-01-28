@@ -2,7 +2,14 @@
   "name": "VIPnytt/CleanParam-URL-filter",
   "description": "description_text",
   "version": "0.0.1",
-  "keywords": ["Clean-Param", "CleanParam", "robots.txt", "URL", "filter"],
+  "keywords": [
+    "Clean-Param",
+    "CleanParam",
+    "robots.txt",
+    "URL",
+    "filter",
+    "duplicate"
+  ],
   "homepage": "https://github.com/VIPnytt/CleanParam-URL-filter",
   "type": "library",
   "license": "MIT",

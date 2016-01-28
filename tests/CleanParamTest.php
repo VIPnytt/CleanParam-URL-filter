@@ -8,9 +8,6 @@ class CleanParamTest extends \PHPUnit_Framework_TestCase
      * Basic usage test
      *
      * @dataProvider generateDataForTest
-     * @covers       CleanParamFilter::addCleanParam
-     * @covers       CleanParamFilter::listApproved
-     * @covers       CleanParamFilter::listDuplicate
      * @param array $urls
      */
     public function testCleanParam($urls)
