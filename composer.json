@@ -1,6 +1,6 @@
 {
   "name": "VIPnytt/CleanParam-URL-filter",
-  "description": "description_text",
+  "description": "Clean-Param URL filtering class - Find and remove any duplicate URL",
   "version": "0.0.1",
   "keywords": [
     "Clean-Param",
@@ -13,7 +13,8 @@
   "homepage": "https://github.com/VIPnytt/CleanParam-URL-filter",
   "type": "library",
   "license": "MIT",
-  "minimum-stability": "stable",
+  "minimum-stability": "dev",
+  "prefer-stable": true,
   "require": {
     "php": ">=5.4.0"
   },

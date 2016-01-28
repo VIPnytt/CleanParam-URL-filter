@@ -164,9 +164,9 @@ class CleanParamFilter
         $scheme = isset($parsedURL['scheme']) ? $parsedURL['scheme'] . '://' : '';
         $host = isset($parsedURL['host']) ? $parsedURL['host'] : '';
         $port = isset($parsedURL['port']) ? ':' . $parsedURL['port'] : '';
-        $path = isset($parsedURL['path']) ? $parsedURL['path'] : '';
+        $path = isset($parsedURL['path']) ? $parsedURL['path'] : '/';
         $query = isset($parsedURL['query']) ? '?' . $parsedURL['query'] : '';
-        return "$scheme$host$port$path$query";
+        return $scheme . $host . $port . $path . $query;
     }
 
     /**

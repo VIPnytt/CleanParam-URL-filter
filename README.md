@@ -9,17 +9,19 @@ PHP class to filter URL duplicates, with support for [Yandex Clean-Param specifi
 
 **What to expect if I'll filter my URLs?**
 > - You'll never have to reload duplicate information again
+> - More efficient web crawling
 > - Server load will decrease
-> - More effecient web crawling
 
-**What is the Clean-Param directive?**
-> It is a way to tell web crawlers and robots about dynamic parameters that do not affect the page content (e.g. identifiers of sessions, users, referrers etc.) [Learn more!](https://yandex.com/support/webmaster/controlling-robot/robots-txt.xml#clean-param)
+**What is Clean-Param?**
+> It's a directive witch tells web crawlers, spiders and robots about dynamic parameters in the URLs that do not affect the page content (e.g. identifiers of sessions, users, referrers etc.) [Learn more!](https://yandex.com/support/webmaster/controlling-robot/robots-txt.xml#clean-param)
+
+> If an website have added support for it, you'll find it in the robots.txt file. Providing these parameters is optional, but has an significant impact on the number of URLs considered as duplicates.
 
 ## Usage:
 ````
 $filter = new \vipnytt\CleanParamFilter($urlArray);
 
-// Optional: Clean-Param
+// Optional: Add Clean-Param
 $filter->addCleanParam($parameter, $path);
 
 // List duplicates

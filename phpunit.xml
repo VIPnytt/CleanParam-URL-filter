@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<phpunit bootstrap="tests/bootstrap.php">
+<phpunit bootstrap="test/bootstrap.php">
 	<filter>
 		<whitelist>
 			<directory>source</directory>
@@ -10,7 +10,7 @@
 	</logging>
 	<testsuites>
 		<testsuite name="">
-			<directory>tests</directory>
+			<directory>test</directory>
 		</testsuite>
 	</testsuites>
 </phpunit>
