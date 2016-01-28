@@ -24,12 +24,19 @@
   },
   "authors": [
     {
+      "name": "VIP nytt",
+      "email": "vipnytt@gmail.com",
+      "role": "creator"
+    },
+    {
       "name": "Jan-Petter Gundersen",
       "email": "europe.jpg@gmail.com",
-      "role": "creator"
+      "role": "developer"
     }
   ],
   "autoload": {
-    "classmap": [ "source/CleanParamFilter.php" ]
+    "classmap": [
+      "source/CleanParamFilter.php"
+    ]
   }
 }

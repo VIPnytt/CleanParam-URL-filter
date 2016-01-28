@@ -22,7 +22,7 @@ class CleanParamFilter
 
     // URL set
     private $urls = [];
-    private $urls_wip = [];
+    private $currentURLs = [];
 
     // Host set
     private $hosts = [];
@@ -41,7 +41,7 @@ class CleanParamFilter
      */
     public function __construct($urls)
     {
-        // Parse URL(s)
+        // Parse URLs
         foreach ($urls as $url) {
             $url = $this->urlEncode($url);
             $parsed = parse_url($url);
@@ -51,11 +51,10 @@ class CleanParamFilter
                 trigger_error('Invalid URL: ' . $url, E_USER_NOTICE);
                 continue;
             }
-            $host = isset($parsed['host']) ? $parsed['host'] : '';
-            if (!isset(array_flip($this->hosts)[$host])) {
-                $this->hosts[] = $host;
+            if (isset($parsed['host']) && !isset(array_flip($this->hosts)[$parsed['host']])) {
+                $this->hosts[] = $parsed['host'];
             }
-            $this->urls[] = $this->unParseURL($parsed);
+            $this->urls[] = $url;
         }
     }
 
@@ -94,23 +93,6 @@ class CleanParamFilter
     }
 
     /**
-     * Build URL from array
-     * Does the opposite of the parse_url($string) function
-     *
-     * @param array $parsedURL
-     * @return string
-     */
-    private function unParseURL($parsedURL)
-    {
-        $scheme = isset($parsedURL['scheme']) ? $parsedURL['scheme'] . '://' : '';
-        $host = isset($parsedURL['host']) ? $parsedURL['host'] : '';
-        $port = isset($parsedURL['port']) ? ':' . $parsedURL['port'] : '';
-        $path = isset($parsedURL['path']) ? $parsedURL['path'] : '';
-        $query = isset($parsedURL['query']) ? '?' . $parsedURL['query'] : '';
-        return "$scheme$host$port$path$query";
-    }
-
-    /**
      * Lists all approved URLs
      *
      * @return array
@@ -128,33 +110,25 @@ class CleanParamFilter
      */
     private function filter()
     {
+        // skip the filtering process if it's already done
         if ($this->parsed) {
             return;
         }
-        $this->convert();
-        $this->filterDuplicateParam();
+        // prepare each individual URL
+        foreach ($this->urls as $url) {
+            $this->currentURLs[$url] = $this->prepareURL($url);
+        }
+        // Filter
+        $this->filterDuplicates();
+        // Sort the result arrays
         sort($this->approved);
         sort($this->duplicate);
-    }
-
-    /**
-     * Convert URLs to a parser readable format
-     *
-     * @return void
-     */
-    private function convert()
-    {
-        foreach ($this->urls as $url) {
-            // sort the query string
-            $new = $this->prepareURL($url);
-            $this->urls_wip[$url] = $new;
-        }
+        // cleanup
+        $this->currentURLs = [];
     }
 
     /**
      * Prepare URL
-     * + Sort URL parameters alphabetically
-     * + Remove needless port number
      *
      * @param string $url
      * @return string
@@ -162,14 +136,17 @@ class CleanParamFilter
     private function prepareURL($url)
     {
         $parsed = parse_url($url);
+        // sort URL parameters alphabetically
         if (isset($parsed['query'])) {
             $qPieces = explode('&', $parsed['query']);
             sort($qPieces);
             $parsed['query'] = implode('&', $qPieces);
         }
+        // remove port number if needless
         if (isset($parsed['port']) && isset($parsed['scheme'])) {
             $defaultPort = getservbyname($parsed['scheme'], 'tcp');
             if (is_int($defaultPort) && $parsed['port'] == $defaultPort) {
+                // port number identical to scheme port default.
                 $parsed['port'] = null;
             }
         }
@@ -177,29 +154,52 @@ class CleanParamFilter
     }
 
     /**
+     * Build URL from array
+     *
+     * @param array $parsedURL
+     * @return string
+     */
+    private function unParseURL($parsedURL)
+    {
+        $scheme = isset($parsedURL['scheme']) ? $parsedURL['scheme'] . '://' : '';
+        $host = isset($parsedURL['host']) ? $parsedURL['host'] : '';
+        $port = isset($parsedURL['port']) ? ':' . $parsedURL['port'] : '';
+        $path = isset($parsedURL['path']) ? $parsedURL['path'] : '';
+        $query = isset($parsedURL['query']) ? '?' . $parsedURL['query'] : '';
+        return "$scheme$host$port$path$query";
+    }
+
+    /**
      * Filter duplicate URLs
      *
      * @return void
      */
-    private function filterDuplicateParam()
+    private function filterDuplicates()
     {
         $new = [];
+        // loop until all duplicates is filtered
         for ($count = 0; $count <= 1; $count++) {
-            foreach ($this->urls_wip as $url => $sorted) {
+            // for each URL
+            foreach ($this->currentURLs as $url => $sorted) {
                 $params = $this->findCleanParam($sorted);
                 $selected = $this->stripParam($sorted, $params);
+                // Check against already checked URLs
                 foreach ($new as $random) {
                     $random = $this->stripParam($random, $params);
                     if ($selected === $random) {
+                        // URL is duplicate
                         continue 2;
                     }
                 }
+                // URL is not a duplicate, add it
                 $new[$url] = $sorted;
                 $count = 0;
             }
-            $this->urls_wip = $new;
+            // update the list of non-duplicate URLs
+            $this->currentURLs = $new;
         }
-        $this->approved = array_keys($this->urls_wip);
+        // generate lists of URLs for 3rd party usage
+        $this->approved = array_keys($this->currentURLs);
         $this->duplicate = array_diff($this->urls, $this->approved);
     }
 
@@ -214,14 +214,17 @@ class CleanParamFilter
         $paramPrefix = ['?', '&'];
         $paramsFound = [];
         $host = parse_url($url, PHP_URL_HOST);
+        // check if CleanParam is set for current host
         if (!isset($this->cleanParam[$host])) {
-            return $paramsFound;
+            return [];
         }
         foreach ($this->cleanParam[$host] as $path => $cleanParam) {
+            // make sure the path matches
             if (!$this->checkPath($path, parse_url($url, PHP_URL_PATH))) {
                 continue;
             }
             foreach ($cleanParam as $param) {
+                // check if parameter is found
                 foreach ($paramPrefix as $char) {
                     if (strpos($url, $char . $param . '=') !== false) {
                         $paramsFound[] = $param;
@@ -263,15 +266,19 @@ class CleanParamFilter
         $prefixArray = ['?', '&'];
         foreach ($paramArray as $param) {
             foreach ($prefixArray as $prefix) {
+                // get character positions
                 $posParam = stripos($url, $prefix . $param . '=');
                 $posDelimiter = stripos($url, '&', min($posParam + 1, strlen($url)));
                 if ($posParam === false) {
+                    // not found
                     continue;
                 }
                 $len = ($posDelimiter !== false && $posParam < $posDelimiter) ? $posDelimiter - $posParam : strlen($url);
+                // stripped URL
                 $url = substr_replace($url, '', $posParam, $len);
             }
         }
+        // fix any newly caused URL format problems
         $url = $this->fixQueryString($url);
         return $url;
     }
@@ -320,9 +327,10 @@ class CleanParamFilter
     public function addCleanParam($param, $path = '/', $host = null)
     {
         if (!isset($host) && count($this->hosts) > 1) {
-            trigger_error('URLs from multiple hosts used. Missing $host parameter', E_USER_ERROR);
+            trigger_error('URLs from multiple hosts used. Missing `host` parameter', E_USER_ERROR);
             return;
         } elseif (!isset($host)) {
+            // use host from URLs
             $host = $this->hosts[0];
         }
         $encodedURL = $this->urlEncode($path);
