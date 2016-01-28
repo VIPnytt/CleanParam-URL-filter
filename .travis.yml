@@ -10,3 +10,5 @@ before_install:
   - composer selfupdate
 install:
   - composer install
+after_script:
+  - CODECLIMATE_REPO_TOKEN=248df7f33b43e574e74a70975b12d69f1d9bc3e8f8151feb72fec8d4f7a89a8c ./vendor/bin/test-reporter
