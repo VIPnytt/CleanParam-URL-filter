@@ -105,13 +105,9 @@ class CleanParamFilter
         $scheme = isset($parsedURL['scheme']) ? $parsedURL['scheme'] . '://' : '';
         $host = isset($parsedURL['host']) ? $parsedURL['host'] : '';
         $port = isset($parsedURL['port']) ? ':' . $parsedURL['port'] : '';
-        $user = isset($parsedURL['user']) ? $parsedURL['user'] : '';
-        $pass = isset($parsedURL['pass']) ? ':' . $parsedURL['pass'] : '';
-        $pass = ($user || $pass) ? "$pass@" : '';
         $path = isset($parsedURL['path']) ? $parsedURL['path'] : '';
         $query = isset($parsedURL['query']) ? '?' . $parsedURL['query'] : '';
-        $fragment = isset($parsedURL['fragment']) ? '#' . $parsedURL['fragment'] : '';
-        return "$scheme$user$pass$host$port$path$query$fragment";
+        return "$scheme$host$port$path$query";
     }
 
     /**
@@ -149,27 +145,33 @@ class CleanParamFilter
     private function convert()
     {
         foreach ($this->urls as $url) {
-            // strip fragment
-            $tmp = explode('#', $url, 1)[0];
             // sort the query string
-            $tmp = $this->paramSort($tmp);
-            $this->urls_wip[$url] = $tmp;
+            $new = $this->prepareURL($url);
+            $this->urls_wip[$url] = $new;
         }
     }
 
     /**
-     * Sort the URL parameters alphabetically
+     * Prepare URL
+     * + Sort URL parameters alphabetically
+     * + Remove needless port number
      *
      * @param string $url
      * @return string
      */
-    private function paramSort($url)
+    private function prepareURL($url)
     {
         $parsed = parse_url($url);
         if (isset($parsed['query'])) {
             $qPieces = explode('&', $parsed['query']);
             sort($qPieces);
             $parsed['query'] = implode('&', $qPieces);
+        }
+        if (isset($parsed['port']) && isset($parsed['scheme'])) {
+            $defaultPort = getservbyname($parsed['scheme'], 'tcp');
+            if (is_int($defaultPort) && $parsed['port'] == $defaultPort) {
+                $parsed['port'] = null;
+            }
         }
         return $this->unParseURL($parsed);
     }
