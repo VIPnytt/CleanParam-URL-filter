@@ -33,7 +33,7 @@ class InvalidURLTest extends \PHPUnit_Framework_TestCase
                     'http:/example.tld/',
                     'http://example.com/',
                     'http://example.com/?ref=somewhere2',
-                    'http://example.com/?ref=somewhere3&'
+                    'http://example.com/?ref=somewhere3?'
                 )
             )
         );
