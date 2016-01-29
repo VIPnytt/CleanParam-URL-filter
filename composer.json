@@ -1,6 +1,6 @@
 {
-  "name": "VIPnytt/CleanParam-URL-filter",
-  "description": "Clean-Param URL filtering class - Find and remove any duplicate URL",
+  "name": "vipnytt/cleanParam-url-filter",
+  "description": "PHP Clean-Param URL filtering class - Find and remove any duplicate URL",
   "version": "0.0.1",
   "keywords": [
     "Clean-Param",
