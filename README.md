@@ -3,6 +3,28 @@
 # Clean-Param URL filtering class
 PHP class to filter URL duplicates, with support for [Yandex Clean-Param specifications](https://yandex.com/support/webmaster/controlling-robot/robots-txt.xml#clean-param).
 
+## Installation
+The library is available for install via Composer package. To install via Composer, please add the requirement to your `composer.json` file, like this:
+
+```json
+{
+    "require": {
+        "vipnytt/cleanparam-url-filter": "dev-master"
+    }
+}
+```
+
+and then use composer to load the lib:
+
+```php
+<?php
+    require 'vendor/autoload.php';
+    $filter = new \vipnytt\CleanParamFilter($urls);
+    ...
+```
+
+You can find out more about Composer here: https://getcomposer.org/
+
 ## FAQ:
 **What does it do?**
 > It filters your URL lists so that any duplicate pages are removed.
