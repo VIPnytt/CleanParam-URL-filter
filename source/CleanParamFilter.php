@@ -22,13 +22,9 @@ class CleanParamFilter
 
     // URL set
     private $urls = [];
-    private $currentURLs = [];
-
-    // Host set
-    private $hosts = [];
 
     // Status
-    private $parsed = false;
+    private $filtered = false;
 
     // Approved and duplicate URLs
     private $approved = [];
@@ -42,19 +38,17 @@ class CleanParamFilter
     public function __construct($urls)
     {
         // Parse URLs
+        sort($urls);
         foreach ($urls as $url) {
             $url = $this->urlEncode($url);
             $parsed = parse_url($url);
             if ($parsed === false ||
-                !isset($parsed['path'])
+                !isset($parsed['host'])
             ) {
                 trigger_error('Invalid URL: ' . $url, E_USER_NOTICE);
                 continue;
             }
-            if (isset($parsed['host']) && !isset(array_flip($this->hosts)[$parsed['host']])) {
-                $this->hosts[] = $parsed['host'];
-            }
-            $this->urls[] = $url;
+            $this->urls[$parsed['host']][] = $url;
         }
     }
 
@@ -111,20 +105,26 @@ class CleanParamFilter
     private function filter()
     {
         // skip the filtering process if it's already done
-        if ($this->parsed) {
+        if ($this->filtered) {
             return;
         }
-        // prepare each individual URL
-        foreach ($this->urls as $url) {
-            $this->currentURLs[$url] = $this->prepareURL($url);
+        $urlsByHost = [];
+        // Loop
+        foreach ($this->urls as $host => $urlArray) {
+            // prepare each individual URL
+            foreach ($urlArray as $url) {
+                $urlsByHost[$host][$url] = $this->prepareURL($url);
+            }
+            // Filter
+            $urlsByHost[$host] = $this->filterDuplicates($urlsByHost[$host], $host);
         }
-        // Filter
-        $this->filterDuplicates();
+        // generate lists of URLs for 3rd party usage
+        $allURLs = call_user_func_array('array_merge', $this->urls);
+        $this->approved = call_user_func_array('array_merge', $urlsByHost);
+        $this->duplicate = array_diff($allURLs, $this->approved);
         // Sort the result arrays
         sort($this->approved);
         sort($this->duplicate);
-        // cleanup
-        $this->currentURLs = [];
     }
 
     /**
@@ -172,16 +172,18 @@ class CleanParamFilter
     /**
      * Filter duplicate URLs
      *
-     * @return void
+     * @param array $array - URLs to filter
+     * @param string $host - Hostname
+     * @return array
      */
-    private function filterDuplicates()
+    private function filterDuplicates($array, $host)
     {
         $new = [];
         // loop until all duplicates is filtered
         for ($count = 0; $count <= 1; $count++) {
             // for each URL
-            foreach ($this->currentURLs as $url => $sorted) {
-                $params = $this->findCleanParam($sorted);
+            foreach ($array as $url => $sorted) {
+                $params = $this->findCleanParam($sorted, $host);
                 $selected = $this->stripParam($sorted, $params);
                 // Check against already checked URLs
                 foreach ($new as $random) {
@@ -196,24 +198,22 @@ class CleanParamFilter
                 $count = 0;
             }
             // update the list of non-duplicate URLs
-            $this->currentURLs = $new;
+            $array = $new;
         }
-        // generate lists of URLs for 3rd party usage
-        $this->approved = array_keys($this->currentURLs);
-        $this->duplicate = array_diff($this->urls, $this->approved);
+        return array_keys($array);
     }
 
     /**
      * Find CleanParam parameters in provided URL
      *
      * @param string $url
+     * @param string $host
      * @return array
      */
-    private function findCleanParam($url)
+    private function findCleanParam($url, $host)
     {
         $paramPrefix = ['?', '&'];
         $paramsFound = [];
-        $host = parse_url($url, PHP_URL_HOST);
         // check if CleanParam is set for current host
         if (!isset($this->cleanParam[$host])) {
             return [];
@@ -326,18 +326,19 @@ class CleanParamFilter
      */
     public function addCleanParam($param, $path = '/', $host = null)
     {
-        if (!isset($host) && count($this->hosts) > 1) {
-            trigger_error('URLs from multiple hosts used. Missing `host` parameter', E_USER_ERROR);
+        if (!isset($host) && count($this->urls) > 1) {
+            trigger_error('URLs from multiple hosts used. Missing `host` parameter', E_USER_WARNING);
             return;
         } elseif (!isset($host)) {
             // use host from URLs
-            $host = $this->hosts[0];
+            //$host = key(reset($this->urls));
+            $host = key($this->urls);
         }
         $encodedURL = $this->urlEncode($path);
         $paramArray = explode('&', $param);
         foreach ($paramArray as $parameter) {
             $this->cleanParam[$host][$encodedURL][$parameter] = $parameter;
         }
-        $this->parsed = false;
+        $this->filtered = false;
     }
 }
