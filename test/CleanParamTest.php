@@ -12,22 +12,26 @@ class CleanParamTest extends \PHPUnit_Framework_TestCase
      */
     public function testCleanParam($urls)
     {
-        // init parser
         $filter = new CleanParamFilter($urls);
         $this->assertInstanceOf('vipnytt\CleanParamFilter', $filter);
 
         $filter->addCleanParam('ref');
+        $filter->addCleanParam('uid', '/page2/', 'example.com');
 
         // Contains
         $this->assertContains('http://example.com/', $filter->listApproved());
         $this->assertContains('http://example.com/?ref=somewhere1', $filter->listDuplicate());
         $this->assertContains('http://example.com/?ref=somewhere3&test1=3', $filter->listApproved());
         $this->assertContains('http://example.com/?ref=somewhere5&test1=3', $filter->listDuplicate());
+        $this->assertContains('http://example.com/page1/?uid=12345', $filter->listApproved());
+        $this->assertContains('http://example.com:80/', $filter->listDuplicate());
         // Same tests as over, but as opposite of the first
         $this->assertNotContains('http://example.com/', $filter->listDuplicate());
         $this->assertNotContains('http://example.com/?ref=somewhere1', $filter->listApproved());
         $this->assertNotContains('http://example.com/?ref=somewhere3&test1=3', $filter->listDuplicate());
         $this->assertNotContains('http://example.com/?ref=somewhere5&test1=3', $filter->listApproved());
+        $this->assertNotContains('http://example.com/page1/?uid=12345', $filter->listDuplicate());
+        $this->assertNotContains('http://example.com:80/', $filter->listApproved());
     }
 
     /**
@@ -45,7 +49,8 @@ class CleanParamTest extends \PHPUnit_Framework_TestCase
                     'http://example.com/?ref=somewhere3&test1=3',
                     'http://example.com/?ref=somewhere4&test1=3',
                     'http://example.com/?ref=somewhere5&test1=3',
-                    'http://example.com/?ref=somewhere6'
+                    'http://example.com/?ref=somewhere6',
+                    'http://example.com:80/'
                 )
             )
         );

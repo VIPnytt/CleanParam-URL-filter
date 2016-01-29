@@ -45,7 +45,7 @@ class CleanParamFilter
             if ($parsed === false ||
                 !isset($parsed['host'])
             ) {
-                trigger_error('Invalid URL: ' . $url, E_USER_NOTICE);
+                trigger_error("Invalid URL: `$url`", E_USER_NOTICE);
                 continue;
             }
             $this->urls[$parsed['host']][] = $url;
@@ -327,7 +327,7 @@ class CleanParamFilter
     public function addCleanParam($param, $path = '/', $host = null)
     {
         if (!isset($host) && count($this->urls) > 1) {
-            trigger_error('URLs from multiple hosts used. Missing `host` parameter', E_USER_WARNING);
+            trigger_error("Missing host parameter for param `$param`. Required because of URLs from multiple hosts is checked.", E_USER_WARNING);
             return;
         } elseif (!isset($host)) {
             // use host from URLs
