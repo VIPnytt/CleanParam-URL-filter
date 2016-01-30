@@ -9,6 +9,7 @@ class CleanParamTest extends \PHPUnit_Framework_TestCase
      *
      * @dataProvider generateDataForTest
      * @param array $urls
+     * @return void
      */
     public function testCleanParam($urls)
     {

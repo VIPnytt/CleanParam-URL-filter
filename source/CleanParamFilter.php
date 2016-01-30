@@ -30,6 +30,9 @@ class CleanParamFilter
     private $approved = [];
     private $duplicate = [];
 
+    // Invalid URLs
+    private $invalid = [];
+
     /**
      * Constructor
      *
@@ -45,7 +48,7 @@ class CleanParamFilter
             if ($parsed === false ||
                 !isset($parsed['host'])
             ) {
-                trigger_error("Invalid URL: `$url`", E_USER_NOTICE);
+                $this->invalid[] = $url;
                 continue;
             }
             $this->urls[$parsed['host']][] = $url;
@@ -109,18 +112,25 @@ class CleanParamFilter
             return;
         }
         $urlsByHost = [];
+        $parsed = [];
         // Loop
         foreach ($this->urls as $host => $urlArray) {
             // prepare each individual URL
             foreach ($urlArray as $url) {
-                $urlsByHost[$host][$url] = $this->prepareURL($url);
+                $path = parse_url($url, PHP_URL_PATH);
+                if (substr($path, -1) == '/') {
+                    $path = substr_replace($path, '', -1);
+                }
+                $urlsByHost[$host][$path][$url] = $this->prepareURL($url);
             }
             // Filter
-            $urlsByHost[$host] = $this->filterDuplicates($urlsByHost[$host], $host);
+            foreach ($urlsByHost[$host] as $array) {
+                $parsed[] = $this->filterDuplicates($array, $host);
+            }
         }
         // generate lists of URLs for 3rd party usage
         $allURLs = call_user_func_array('array_merge', $this->urls);
-        $this->approved = call_user_func_array('array_merge', $urlsByHost);
+        $this->approved = call_user_func_array('array_merge', $parsed);
         $this->duplicate = array_diff($allURLs, $this->approved);
         // Sort the result arrays
         sort($this->approved);
@@ -216,7 +226,7 @@ class CleanParamFilter
         $paramsFound = [];
         // check if CleanParam is set for current host
         if (!isset($this->cleanParam[$host])) {
-            return [];
+            return $paramsFound;
         }
         foreach ($this->cleanParam[$host] as $path => $cleanParam) {
             // make sure the path matches
@@ -279,7 +289,7 @@ class CleanParamFilter
             }
         }
         // fix any newly caused URL format problems
-        $url = $this->fixQueryString($url);
+        $url = $this->fixURL($url);
         return $url;
     }
 
@@ -289,14 +299,14 @@ class CleanParamFilter
      * @param string $url
      * @return string
      */
-    private static function fixQueryString($url)
+    private static function fixURL($url)
     {
         // if ? is missing, but & exists, switch
         if (strpos($url, '?') === false && strpos($url, '&') !== false) {
             $url = substr_replace($url, '?', strpos($url, '&'), 1);
         }
-        // Strip last character too
-        $strip = ['&', '?'];
+        // Strip last character
+        $strip = ['#', '&', '?', '/'];
         foreach ($strip as $char) {
             if (substr($url, -1) == $char) {
                 $url = substr_replace($url, '', -1);
@@ -317,6 +327,16 @@ class CleanParamFilter
     }
 
     /**
+     * Lists all invalid URLs
+     *
+     * @return array
+     */
+    public function listInvalid()
+    {
+        return $this->invalid;
+    }
+
+    /**
      * Add CleanParam
      *
      * @param string $param - parameter(s)
@@ -327,11 +347,10 @@ class CleanParamFilter
     public function addCleanParam($param, $path = '/', $host = null)
     {
         if (!isset($host) && count($this->urls) > 1) {
-            trigger_error("Missing host parameter for param `$param`. Required because of URLs from multiple hosts is checked.", E_USER_WARNING);
+            trigger_error("Missing host parameter for param `$param`. Required because of URLs from multiple hosts is being filtered.", E_USER_WARNING);
             return;
         } elseif (!isset($host)) {
             // use host from URLs
-            //$host = key(reset($this->urls));
             $host = key($this->urls);
         }
         $encodedURL = $this->urlEncode($path);

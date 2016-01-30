@@ -9,14 +9,15 @@ class InvalidURLTest extends \PHPUnit_Framework_TestCase
      *
      * @dataProvider generateDataForTest
      * @param array $urls
-     * @expectedException PHPUnit_Framework_Error_Notice
+     * @return void
      */
     public function testInvalidURL($urls)
     {
         $filter = new CleanParamFilter($urls);
         $this->assertInstanceOf('vipnytt\CleanParamFilter', $filter);
 
-        // Invalid URL, not listed anywhere
+        // Invalid URLs
+        $this->assertContains('http:/example.tld/', $filter->listInvalid());
         $this->assertNotContains('http:/example.tld/', $filter->listApproved());
         $this->assertNotContains('http:/example.tld/', $filter->listDuplicate());
     }
