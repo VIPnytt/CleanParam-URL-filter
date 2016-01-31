@@ -1,9 +1,9 @@
 <?php
 
-use vipnytt\CleanParamFilter;
-
 class InvalidURLTest extends \PHPUnit_Framework_TestCase
 {
+    use vipnytt;
+
     /**
      * Basic usage test
      *
@@ -13,7 +13,7 @@ class InvalidURLTest extends \PHPUnit_Framework_TestCase
      */
     public function testInvalidURL($urls)
     {
-        $filter = new CleanParamFilter($urls);
+        $filter = new vipnytt\CleanParamFilter($urls);
         $this->assertInstanceOf('vipnytt\CleanParamFilter', $filter);
 
         // Invalid URLs

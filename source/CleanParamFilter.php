@@ -13,7 +13,7 @@
  * @link https://yandex.com/support/webmaster/controlling-robot/robots-txt.xml#clean-param
  */
 
-namespace vipnytt\CleanParamFilter;
+namespace vipnytt;
 
 class CleanParamFilter
 {

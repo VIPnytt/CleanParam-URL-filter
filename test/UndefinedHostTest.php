@@ -1,9 +1,10 @@
 <?php
 
-use vipnytt\CleanParamFilter;
 
 class UndefinedHostTest extends \PHPUnit_Framework_TestCase
 {
+    use vipnytt;
+
     /**
      * Basic usage test
      *
@@ -14,7 +15,7 @@ class UndefinedHostTest extends \PHPUnit_Framework_TestCase
      */
     public function testUndefinedHost($urls)
     {
-        $filter = new CleanParamFilter($urls);
+        $filter = new vipnytt\CleanParamFilter($urls);
         $this->assertInstanceOf('vipnytt\CleanParamFilter', $filter);
 
         $filter->addCleanParam('articleID');
