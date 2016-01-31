@@ -13,7 +13,7 @@
  * @link https://yandex.com/support/webmaster/controlling-robot/robots-txt.xml#clean-param
  */
 
-namespace vipnytt;
+namespace vipnytt\CleanParamFilter;
 
 class CleanParamFilter
 {
@@ -45,8 +45,9 @@ class CleanParamFilter
         foreach ($urls as $url) {
             $url = $this->urlEncode($url);
             $parsed = parse_url($url);
-            if ($parsed === false ||
-                !isset($parsed['host'])
+            if ($parsed === false
+                || !isset($parsed['scheme'])
+                || !isset($parsed['host'])
             ) {
                 $this->invalid[] = $url;
                 continue;
@@ -118,7 +119,7 @@ class CleanParamFilter
             // prepare each individual URL
             foreach ($urlArray as $url) {
                 $path = parse_url($url, PHP_URL_PATH);
-                if (substr($path, -1) == '/') {
+                if (mb_substr($path, -1) == '/') {
                     $path = substr_replace($path, '', -1);
                 }
                 $urlsByHost[$host][$path][$url] = $this->prepareURL($url);
@@ -236,7 +237,7 @@ class CleanParamFilter
             foreach ($cleanParam as $param) {
                 // check if parameter is found
                 foreach ($paramPrefix as $char) {
-                    if (strpos($url, $char . $param . '=') !== false) {
+                    if (mb_strpos($url, $char . $param . '=') !== false) {
                         $paramsFound[] = $param;
                     }
                 }
@@ -277,13 +278,13 @@ class CleanParamFilter
         foreach ($paramArray as $param) {
             foreach ($prefixArray as $prefix) {
                 // get character positions
-                $posParam = stripos($url, $prefix . $param . '=');
-                $posDelimiter = stripos($url, '&', min($posParam + 1, strlen($url)));
+                $posParam = mb_stripos($url, $prefix . $param . '=');
+                $posDelimiter = mb_stripos($url, '&', min($posParam + 1, mb_strlen($url)));
                 if ($posParam === false) {
                     // not found
                     continue;
                 }
-                $len = ($posDelimiter !== false && $posParam < $posDelimiter) ? $posDelimiter - $posParam : strlen($url);
+                $len = ($posDelimiter !== false && $posParam < $posDelimiter) ? $posDelimiter - $posParam : mb_strlen($url);
                 // stripped URL
                 $url = substr_replace($url, '', $posParam, $len);
             }
@@ -302,13 +303,13 @@ class CleanParamFilter
     private static function fixURL($url)
     {
         // if ? is missing, but & exists, switch
-        if (strpos($url, '?') === false && strpos($url, '&') !== false) {
-            $url = substr_replace($url, '?', strpos($url, '&'), 1);
+        if (mb_strpos($url, '?') === false && mb_strpos($url, '&') !== false) {
+            $url = substr_replace($url, '?', mb_strpos($url, '&'), 1);
         }
         // Strip last character
-        $strip = ['#', '&', '?', '/'];
+        $strip = ['&', '?', '/'];
         foreach ($strip as $char) {
-            if (substr($url, -1) == $char) {
+            if (mb_substr($url, -1) == $char) {
                 $url = substr_replace($url, '', -1);
             }
         }
