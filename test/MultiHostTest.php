@@ -1,10 +1,9 @@
 <?php
 
+use vipnytt\CleanParamFilter;
 
 class MultiHostTest extends \PHPUnit_Framework_TestCase
 {
-    use vipnytt;
-
     /**
      * Basic usage test
      *
@@ -14,7 +13,7 @@ class MultiHostTest extends \PHPUnit_Framework_TestCase
      */
     public function testMultiHost($urls)
     {
-        $filter = new vipnytt\CleanParamFilter($urls);
+        $filter = new CleanParamFilter($urls);
         $this->assertInstanceOf('vipnytt\CleanParamFilter', $filter);
 
         $filter->addCleanParam('ref', '/', 'example.com');
