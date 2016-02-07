@@ -2,7 +2,7 @@
 <phpunit bootstrap="test/bootstrap.php">
 	<filter>
 		<whitelist>
-			<directory>source</directory>
+			<directory>src</directory>
 		</whitelist>
 	</filter>
 	<logging>
@@ -10,7 +10,7 @@
 	</logging>
 	<testsuites>
 		<testsuite name="">
-			<directory>test</directory>
+			<directory>test/cases</directory>
 		</testsuite>
 	</testsuites>
 </phpunit>

@@ -1,5 +1,7 @@
 <?php
 
+namespace vipnytt\CleanParamFilter\tests;
+
 use vipnytt\CleanParamFilter;
 
 class UndefinedHostTest extends \PHPUnit_Framework_TestCase
@@ -9,7 +11,7 @@ class UndefinedHostTest extends \PHPUnit_Framework_TestCase
      *
      * @dataProvider generateDataForTest
      * @param array $urls
-     * @expectedException PHPUnit_Framework_Error_WARNING
+     * @expectedException \PHPUnit_Framework_Error_WARNING
      * @return void
      */
     public function testUndefinedHost($urls)

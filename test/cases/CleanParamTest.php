@@ -1,5 +1,7 @@
 <?php
 
+namespace vipnytt\CleanParamFilter\tests;
+
 use vipnytt\CleanParamFilter;
 
 class CleanParamTest extends \PHPUnit_Framework_TestCase

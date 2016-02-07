@@ -1,5 +1,7 @@
 <?php
 
+namespace vipnytt\CleanParamFilter\tests;
+
 use vipnytt\CleanParamFilter;
 
 class InvalidURLTest extends \PHPUnit_Framework_TestCase

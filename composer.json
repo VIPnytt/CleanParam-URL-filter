@@ -1,7 +1,7 @@
 {
   "name": "vipnytt/cleanparam-url-filter",
   "description": "Clean-Param URL filtering class - Find and remove any duplicate URL",
-  "version": "0.1-beta",
+  "version": "0.1",
   "keywords": [
     "Clean-Param",
     "CleanParam",
@@ -35,8 +35,8 @@
     }
   ],
   "autoload": {
-    "classmap": [
-      "source/CleanParamFilter.php"
-    ]
+    "psr-4": {
+      "vipnytt\\": "src/"
+    }
   }
 }

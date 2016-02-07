@@ -15,6 +15,8 @@
 
 namespace vipnytt;
 
+use vipnytt\CleanParamFilter\URLParser;
+
 class CleanParamFilter
 {
     // Clean-Param set
@@ -43,51 +45,14 @@ class CleanParamFilter
         // Parse URLs
         sort($urls);
         foreach ($urls as $url) {
-            $url = $this->urlEncode($url);
-            $parsed = parse_url($url);
-            if ($parsed === false
-                || !isset($parsed['scheme'])
-                || !isset($parsed['host'])
-            ) {
+            $urlParser = new URLParser(trim($url));
+            if (!$urlParser->isValid()) {
                 $this->invalid[] = $url;
                 continue;
             }
-            $this->urls[$parsed['host']][] = $url;
+            $url = $urlParser->encode();
+            $this->urls[parse_url($url, PHP_URL_HOST)][] = $url;
         }
-    }
-
-    /**
-     * URL encoder according to RFC 3986
-     * Returns a string containing the encoded URL with disallowed characters converted to their percentage encodings.
-     * @link http://publicmind.in/blog/url-encoding/
-     *
-     * @param string $url
-     * @return string
-     */
-    private static function urlEncode($url)
-    {
-        $reserved = array(
-            ":" => '!%3A!ui',
-            "/" => '!%2F!ui',
-            "?" => '!%3F!ui',
-            "#" => '!%23!ui',
-            "[" => '!%5B!ui',
-            "]" => '!%5D!ui',
-            "@" => '!%40!ui',
-            "!" => '!%21!ui',
-            "$" => '!%24!ui',
-            "&" => '!%26!ui',
-            "'" => '!%27!ui',
-            "(" => '!%28!ui',
-            ")" => '!%29!ui',
-            "*" => '!%2A!ui',
-            "+" => '!%2B!ui',
-            "," => '!%2C!ui',
-            ";" => '!%3B!ui',
-            "=" => '!%3D!ui',
-            "%" => '!%25!ui'
-        );
-        return preg_replace(array_values($reserved), array_keys($reserved), rawurlencode($url));
     }
 
     /**
@@ -255,7 +220,8 @@ class CleanParamFilter
      */
     private function checkPath($path, $prefix)
     {
-        $path = $this->urlEncode($path);
+        $pathParser = new URLParser($path);
+        $path = $pathParser->encode();
         // change @ to \@
         $escaped = strtr($path, ["@" => '\@']);
         // match result
@@ -354,10 +320,11 @@ class CleanParamFilter
             // use host from URLs
             $host = key($this->urls);
         }
-        $encodedURL = $this->urlEncode($path);
+        $urlParser = new URLParser($path);
+        $encodedPath = $urlParser->encode();
         $paramArray = explode('&', $param);
         foreach ($paramArray as $parameter) {
-            $this->cleanParam[$host][$encodedURL][$parameter] = $parameter;
+            $this->cleanParam[$host][$encodedPath][$parameter] = $parameter;
         }
         $this->filtered = false;
     }
