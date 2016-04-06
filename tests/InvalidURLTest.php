@@ -1,6 +1,6 @@
 <?php
 
-namespace vipnytt\CleanParamFilter\tests;
+namespace vipnytt\CleanParamFilter\Tests;
 
 use vipnytt\CleanParamFilter;
 

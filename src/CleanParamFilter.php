@@ -84,7 +84,7 @@ class CleanParamFilter
             // prepare each individual URL
             foreach ($urlArray as $url) {
                 $path = parse_url($url, PHP_URL_PATH);
-                if (mb_substr($path, -1) == '/') {
+                if ($path !== false && mb_substr($path, -1) == '/') {
                     $path = substr_replace($path, '', -1);
                 }
                 $urlsByHost[$host][$path][$url] = $this->prepareURL($url);

@@ -1,7 +1,15 @@
-[![Build Status](https://travis-ci.org/VIPnytt/CleanParam-URL-filter.svg?branch=master)](https://travis-ci.org/VIPnytt/CleanParam-URL-filter) [![Code Climate](https://codeclimate.com/github/VIPnytt/CleanParam-URL-filter/badges/gpa.svg)](https://codeclimate.com/github/VIPnytt/CleanParam-URL-filter) [![Test Coverage](https://codeclimate.com/github/VIPnytt/CleanParam-URL-filter/badges/coverage.svg)](https://codeclimate.com/github/VIPnytt/CleanParam-URL-filter/coverage) [![License](https://poser.pugx.org/VIPnytt/CleanParam-URL-filter/license)](https://packagist.org/packages/VIPnytt/CleanParam-URL-filter) [![Join the chat at https://gitter.im/VIPnytt/CleanParam-URL-filter](https://badges.gitter.im/VIPnytt/CleanParam-URL-filter.svg)](https://gitter.im/VIPnytt/CleanParam-URL-filter)
+[![Build Status](https://travis-ci.org/VIPnytt/CleanParam-URL-filter.svg?branch=master)](https://travis-ci.org/VIPnytt/CleanParam-URL-filter)
+[![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/VIPnytt/CleanParam-URL-filter/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/VIPnytt/CleanParam-URL-filter/?branch=master)
+[![Code Climate](https://codeclimate.com/github/VIPnytt/CleanParam-URL-filter/badges/gpa.svg)](https://codeclimate.com/github/VIPnytt/CleanParam-URL-filter)
+[![Test Coverage](https://codeclimate.com/github/VIPnytt/CleanParam-URL-filter/badges/coverage.svg)](https://codeclimate.com/github/VIPnytt/CleanParam-URL-filter/coverage)
+[![License](https://poser.pugx.org/VIPnytt/CleanParam-URL-filter/license)](https://github.com/VIPnytt/CleanParam-URL-filter/blob/master/LICENSE)
+[![Packagist](https://img.shields.io/packagist/v/vipnytt/cleanparam-url-filter.svg)](https://packagist.org/packages/vipnytt/cleanparam-url-filter)
+[![Join the chat at https://gitter.im/VIPnytt/CleanParam-URL-filter](https://badges.gitter.im/VIPnytt/CleanParam-URL-filter.svg)](https://gitter.im/VIPnytt/CleanParam-URL-filter)
 
 # Clean-Param URL filtering class
 PHP class to filter URL duplicates, with integrated support for [Yandex Clean-Param specifications](https://yandex.com/support/webmaster/controlling-robot/robots-txt.xml#clean-param).
+
+[![SensioLabsInsight](https://insight.sensiolabs.com/projects/93f8037e-d3b3-4cb5-8d4a-5d41fa736355/big.png)](https://insight.sensiolabs.com/projects/93f8037e-d3b3-4cb5-8d4a-5d41fa736355)
 
 ## FAQ:
 **What does it do?**
@@ -61,7 +69,7 @@ print_r($filter->listApproved());
 Reason: You're probably trying to filter thousands of URLs.
 
 1. It is recommended to break down the list of URLs to a bare minimum. This can be done by grouping the URLs by domain (or even host), and then filter each group individually.
-2. Increase PHP's max execution time limit by using ````set_time_limit(60);````. When called, it sets the time limit to 60 seconds, and restarts the timeout counter from zero.
+2. Increase PHPs max execution time limit by using ````set_time_limit(60);````. When called, it sets the time limit to 60 seconds, and restarts the timeout counter from zero.
 3. If you're already looping thou groups of URLs (like suggested), put ````set_time_limit(60);```` into the loop, so that each time a new set of URLs is parsed, the timeout counter is restarted.
 
 ##### Fatal error:  Allowed memory size of 134217728 bytes exhausted.
@@ -69,4 +77,4 @@ Reason: You're probably trying to filter thousands of URLs.
 Reason: You're probably trying to filter tens of thousands of URLs, maybe even more.
 
 1. At this point, you're required to break down the list of URLs to a bare minimum. This can be done by grouping the URLs by domain (or even better, host), and then filter each group individually.
-2. Increase PHP's memory limit. This could be done by setting ````ini_set('memory_limit', '256M');```` or by changing the ````memory_limit```` variable in your ````php.ini```` file.
+2. Increase PHPs memory limit. This could be done by setting ````ini_set('memory_limit', '256M');```` or by changing the ````memory_limit```` variable in your ````php.ini```` file.

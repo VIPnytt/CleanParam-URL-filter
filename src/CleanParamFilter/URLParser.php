@@ -29,14 +29,12 @@ final class URLParser
     public function isValid()
     {
         $this->encode();
-        $parsed = parse_url($this->url);
-        if ($parsed === false
-            || !$this->isHostValid()
-            || !$this->isSchemeValid()
-        ) {
-            return false;
-        }
-        return true;
+        return (
+            filter_var($this->url, FILTER_VALIDATE_URL)
+            && parse_url($this->url) !== false
+            && $this->isHostValid()
+            && $this->isSchemeValid()
+        );
     }
 
     /**
